@@ -1,9 +1,13 @@
 gRPC at Lyft
 gRPC Meetup - SF
 
-Chris Roche
-Lyft, Software Engineer - Core Libraries
+Christopher Burnett & Chris Roche
+Lyft, Core Libraries
+cburnett@lyft.com
 croche@lyft.com
+
+http://github.com/twoism
+@twoism
 
 http://rodaine.com
 http://github.com/rodaine
@@ -12,27 +16,68 @@ http://github.com/rodaine
 * Howdy!
 
 - Core Libraries @ Lyft
-- Previously Core Platform & DevOps @ VSCO
+- Previously Core Platform VSCO, Tweet Miner
 
 .image howdy.gif 400 _
 
-* Background
+* Story time!
 
 * Infrastructure @ Lyft
 
 - PHP Monolith (ongoing decomposition)
-- Go "Tier-Zero" core services
 - Python (Micro)services
+- Go "Tier-Zero" core services
 - Envoy network fabric
+
+* Why Go?
+
+* Why Go?
+
+- Java/Go shootout
+- Go won (obviously)
+
+* Why Go?
+
+* Speed
+
+* Speed
+
+- net/http is fast (enough)
+- so is gRPC
+- engineer ramp up time
+
+* Simplicity
+
+* Simplicity
+
+- language design
+- deployments
+- tuning
+
+* Safety
+
+* Safety
+
+- types are dope
+- remove an entire class of errors
+- tooling
 
 * What problems are we trying to solve?
 
 - More services = more communication
 - Many errors in our Python services are type related
-- Documenting APIs are hard to maintain
+- Documentation of APIs is hard to maintain
 - No single source of truth for the shape of our data
 
-* Solution: gRPC and Protocol Buffers!
+* gRPC
+
+* gRPC
+
+- IDL based RPC
+- HTTP/2
+- Open source chubby (sort of)
+
+* gRPC Benifits
 
 - Standardize the API definitions and I/O
 - Enforce types at the service boundaries
@@ -42,11 +87,10 @@ http://github.com/rodaine
 
 * Tier-Zero Core Services
 
-- Primary apps of the business
+- Business layer primitives
 - Go: type-safety & performance
-- proto3-based ODM for MongoDB & DynamoDB
-- gRPC interface
-- Interceptors used to augment RPC endpoints
+- gRPC/proto3 IDLs
+- Interceptors for custom behavior
 
 * gRPC Unary Interceptor
 
@@ -66,6 +110,7 @@ http://github.com/rodaine
 
 - Provided with the Lyft "StdLib"
 - Core Libraries solves this so that every service doesn't
+- Could be way easier
 
 * Future: protoc-gen-go plugin
 
