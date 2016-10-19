@@ -1,7 +1,7 @@
-gRPC at Lyft
-gRPC Meetup - SF
+Go at Lyft
+Go Meetup - Seattle
 
-Christopher Burnett & Chris Roche
+Christopher Burnett & (Other) Chris Roche
 Lyft, Core Libraries
 cburnett@lyft.com
 croche@lyft.com
@@ -21,6 +21,8 @@ http://github.com/rodaine
 .image howdy.gif 400 _
 
 * Story time!
+
+* Infrastructure @ Lyft
 
 * Infrastructure @ Lyft
 
@@ -75,7 +77,7 @@ http://github.com/rodaine
 
 - IDL based RPC
 - HTTP/2
-- Open source chubby (sort of)
+- OSS of Google Chubby (sort of)
 
 * gRPC Benifits
 
@@ -92,7 +94,9 @@ http://github.com/rodaine
 - gRPC/proto3 IDLs
 - Interceptors for custom behavior
 
-* gRPC Unary Interceptor
+* Extending gRPC
+
+* Interceptors
 
 .code interceptors.go /RequestID/,/END RequestID/
 
@@ -227,7 +231,7 @@ _"The_network_should_be_transparent_to_applications._When_network_and_applicatio
 - Package manager based versioning (pip / glide)
 - CI verifies builds, linting, generated tests
 
-* Live Coding: gRPC KV Store + Envoy + Flask Python Client
+* Live Coding: gRPC KV Store + Odie
 
 .image coding.gif 400 _
 
