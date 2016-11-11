@@ -20,6 +20,7 @@ cburnett@lyft.com
 - DynamoDB is awesome but the API is terrible
 - We need something like Doctrine in GO
 - Unified API makes migrations pleasant 
+- Because it's awesome
 
 * Jargon
 
@@ -46,9 +47,19 @@ Client
 - Not type safe (interface{})
 - Highly extensible
 
+* Jargon
+
+Event (or Hook)
+
+- Pre and Post for all actions
+- Ported from Doctrine
+- Encourage bad design
+
 * Odie clients
 
-- Foundation for repos
+* Odie clients
+
+- Foundation for repositories
 - Fluent API for datastore operations
 - Metrics baked in by default
 
@@ -62,19 +73,23 @@ Client
 
 * WTF is imgo?
 
+* First off, MongoDB
+
+.image mongo.gif 550 _
+
 * mgo
 
 .image tirefire.gif 500 _
 
-* imgo
-
-.link http://github.com/lyft/imgo
+* mgo
 
 - mgo is trash
 - (nearly) impossible to mock
-- but it's the best we got
+- it's the best we got
 
 * imgo
+
+.link http://github.com/lyft/imgo
 
 - Exposes interfaces for all of mgo
 - Built in mocking
@@ -84,6 +99,12 @@ Client
 * imgo
 
 .code imgo_test.go
+
+* BTW, stop testing all the way through to the DB!
+
+* No, really. Stop
+
+* Back to Odie...
 
 * Defining a model
 
@@ -105,7 +126,7 @@ Client
 	│   │   ├── hooks.odie.go
 	│   │   ├── put.odie.go
 	│   │   ├── query.odie.go
-	│   │   ├── repo.odie.go
+	│   │   ├── repo.odie.go // <- the dynamodb repo
 	│   │   ├── scan.odie.go
 	│   │   └── update.odie.go
 	│   └── mongodb
@@ -115,10 +136,10 @@ Client
 	│       ├── hooks.odie.go
 	│       ├── put.odie.go
 	│       ├── query.odie.go
-	│       ├── repo.odie.go
+	│       ├── repo.odie.go // <- the mongodb repo
 	│       └── update.odie.go
-	├── test_repo.odie.go
-	└── test_repo.pb.go
+	├── test_repo.odie.go // <- the model
+	└── test_repo.pb.go   // <- the protobuf
 
 * Type safety comes at a cost
 
@@ -127,18 +148,52 @@ Client
 - Mostly delegation code
 - Generics would be nice
 
+* Codegen
+
+.code query_builder.go
+
+.code codegen.go
+
+* Repo operations
+
+.code repo_iface.go
+
 * Usage
 
 .code repo.go
 
-* Lifecycle Events
+* Queries
+
+- Unified Dynamo and Mongo APIs (Almost)
+- Type safe inversion pattern
+- Lovingly crafted for Lyft
+
+* Queries
+
+.code exp.go
+
+* Queries
+
+.code queries.go
 
 * Lifecycle Events
 
-- Pre and Post for all operations
+* Lifecycle Events
+
+- Pre and Post hooks for all operations
 - Interface implementation
 - Errors halt the call chain
 - Built with client Decorators
+
+* Side note, please stop doing this
+
+* OOP is your friend and delegates are way easier to reason about. Seriously.
+
+* Know a Liskov
+
+.image liskov.jpg 550 _
+
+* Anyway...
 
 * Example (PrePut)
 
@@ -146,13 +201,74 @@ Client
 
 * Decorators
 
+- Client and Repo implementations
+- Per operation application
+- "middleware" like
+- Event hooks are probably fine
+
+* Decorators (Client)
+
+.code decorator.go
+
+* Decorators (Per operation)
+
+.code op_decorator.go
+
+* Ch, Ch, Ch... Changesets
+
+.image changes.jpg 550 _
+
 * Changesets
+
+- Ported from Doctrine (Unit of work)
+- Built into models by default
+- Implemented with a client Decorator
+- Pretty cool, not Bowie cool though :-(
+
+* Changesets
+
+.code changesets.go
+
+* Changesets
+
+.code changes.go
+
+* Changesets
+
+You get them for free
+
+.code commit.go
+
+* gRPC/Proto fluency
+
+- Models can be sent via `ToProto`
+- Protos can be ingested via `ToModel`
+- This is dope
+
+.code proto.go
 
 * Metrics
 
+* Metrics
 
+- success/failure counters
+- per operation histograms
 
+* Metrics
 
+.code metrics.go
+
+* Metrics
+
+	odie_test.odie.mongodb.get:1|c
+	odie_test.odie.mongodb.get.success:1|c
+	odie_test.odie.mongodb.get:245.000000|ms
+
+* Future plans
+
+- Codegen CRUD RPC
+- RPC datastore adapters
+- 
 
 
 
