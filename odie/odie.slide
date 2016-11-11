@@ -1,0 +1,162 @@
+Odie - Deep Dive
+Lyft HQ - SF
+
+Christopher Burnett
+Lyft, Core Libraries
+cburnett@lyft.com
+
+* Odie
+
+* Odie
+
+- Driver agnostic Object Document Mapper (ODM)
+- Fluent MongoDB and DynamoDB API
+- Proto3 based model definition
+
+* Why build this?
+
+* Why build this?
+
+- DynamoDB is awesome but the API is terrible
+- We need something like Doctrine in GO
+- Unified API makes migrations pleasant 
+
+* Jargon
+
+Repository (repo)
+
+- High level, type safe datastore access
+- Highly extensible (Events, Decorators)
+- Generated via protoc plugin
+- Lives in lyft-idl
+
+* Jargon 
+
+Model
+
+- Datastore aware Go struct
+- Protobuf counterpart
+- Changeset/Dirty tracking
+
+* Jargon
+
+Client
+
+- Low level datastore access
+- Not type safe (interface{})
+- Highly extensible
+
+* Odie clients
+
+- Foundation for repos
+- Fluent API for datastore operations
+- Metrics baked in by default
+
+* Odie clients (DynamoDB)
+
+.code dynamo_client.go
+
+* Odie clients (MongoDB)
+
+.code mongo_client.go
+
+* WTF is imgo?
+
+* mgo
+
+.image tirefire.gif 500 _
+
+* imgo
+
+.link http://github.com/lyft/imgo
+
+- mgo is trash
+- (nearly) impossible to mock
+- but it's the best we got
+
+* imgo
+
+- Exposes interfaces for all of mgo
+- Built in mocking
+- Transparent upgrading
+- Heroic effort by @croche
+
+* imgo
+
+.code imgo_test.go
+
+* Defining a model
+
+- Custom proto3 annotations
+- Cross driver specific field options
+- Integrates seamlessly into lyft-idl
+
+* Defining a model
+
+.code user.proto
+
+* Generated code
+
+	├── test_repo
+	│   ├── dynamodb
+	│   │   ├── del.odie.go
+	│   │   ├── events.odie.go
+	│   │   ├── get.odie.go
+	│   │   ├── hooks.odie.go
+	│   │   ├── put.odie.go
+	│   │   ├── query.odie.go
+	│   │   ├── repo.odie.go
+	│   │   ├── scan.odie.go
+	│   │   └── update.odie.go
+	│   └── mongodb
+	│       ├── del.odie.go
+	│       ├── events.odie.go
+	│       ├── get.odie.go
+	│       ├── hooks.odie.go
+	│       ├── put.odie.go
+	│       ├── query.odie.go
+	│       ├── repo.odie.go
+	│       └── update.odie.go
+	├── test_repo.odie.go
+	└── test_repo.pb.go
+
+* Type safety comes at a cost
+
+- Go template based
+- Walks the proto3 AST
+- Mostly delegation code
+- Generics would be nice
+
+* Usage
+
+.code repo.go
+
+* Lifecycle Events
+
+* Lifecycle Events
+
+- Pre and Post for all operations
+- Interface implementation
+- Errors halt the call chain
+- Built with client Decorators
+
+* Example (PrePut)
+
+.code validate.go
+
+* Decorators
+
+* Changesets
+
+* Metrics
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,20 @@
+syntax="proto3";
+
+import "github.com/lyft/odie/protoc-gen-odie/odie/ext.proto";
+
+package pb.lyft.test_repo;
+
+option go_package = "test_repo";
+
+message User {
+  option (odie.dynamo_repo).enabled = true;
+  option (odie.mongo_repo).enabled = true;
+
+  uint64 id = 1 [
+  	(odie.dynamo_attr) = { primary: true },  
+  	(odie.mongo_attr) = { primary: true, name: "_id" },
+  	(odie.json) = { name: "user_id" }
+  ];
+
+  string name = 2 [(odie.dynamo_attr).name = "username"];
+}
