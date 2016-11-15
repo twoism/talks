@@ -53,7 +53,7 @@ Event (or Hook)
 
 - Pre and Post for all actions
 - Ported from Doctrine
-- Encourage bad design
+- Can get messy
 
 * Odie clients
 
@@ -77,15 +77,15 @@ Event (or Hook)
 
 .image mongo.gif 550 _
 
-* mgo
+* and then, mgo
 
 .image tirefire.gif 500 _
 
 * mgo
 
-- mgo is trash
+- mgo is obtuse
 - (nearly) impossible to mock
-- it's the best we got
+- It's the best we have
 
 * imgo
 
@@ -100,11 +100,9 @@ Event (or Hook)
 
 .code imgo_test.go
 
-* BTW, stop testing all the way through to the DB!
+* Yay, no more testing through to the DB!
 
-* No, really. Stop
-
-* Back to Odie...
+* Defining a model
 
 * Defining a model
 
@@ -185,9 +183,9 @@ Event (or Hook)
 - Errors halt the call chain
 - Built with client Decorators
 
-* Side note, please stop doing this
+* Side note, please use sparingly
 
-* OOP is your friend and delegates are way easier to reason about. Seriously.
+* OOP is your friend and delegates are way easier to reason about.
 
 * Know a Liskov
 
@@ -241,11 +239,21 @@ You get them for free
 
 * gRPC/Proto fluency
 
+* gRPC/Proto fluency
+
 - Models can be sent via `ToProto`
 - Protos can be ingested via `ToModel`
 - This is dope
 
 .code proto.go
+
+* What about existing protos?
+
+* What about existing protos?
+
+- Most services implement a model counterpart
+- Odie models can replace these
+- Client vs Repo APIs are pretty much the same
 
 * Metrics
 
@@ -268,7 +276,7 @@ You get them for free
 
 - Codegen CRUD RPC
 - RPC datastore adapters
-- 
+- Token Bucket Migrator
 
 
 

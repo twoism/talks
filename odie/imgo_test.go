@@ -9,9 +9,9 @@ func TestRepo_GetById(t *testing.T) {
 		Name: "test",
 	}
 
-	sess := &mock.Session{
-		Results: &u,
-	}
+	sess := &mock.Session{ // HL
+		Results: &u, // HL
+	} // HL
 
 	repo := New(mongo.New(sess))
 

@@ -9,5 +9,5 @@ func (s *Server) Get(ctx context.Context, req *test_repo.GetRequest) (*test_repo
 		return nil, wrapErrorIf(err)
 	}
 
-	return user.ToProto(), nil
+	return user.ToProto(), nil // HL
 }
