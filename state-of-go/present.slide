@@ -32,12 +32,17 @@ Core Libraries
 * Simplicity
 
 - No generics (Sorry)
-- Robust standard lib (http/2, context, )
+- Robust standard lib (http/2, context, io)
 - Opinionated (gofmt, lint)
 
 * Speed
 
 - NEED BENCHMARKS
+
+* What's missing?
+
+- NumPy, SciPy 
+- Mature ML
 
 * Go at Lyft
 
