@@ -1,0 +1,99 @@
+State of Go
+Lyft Seattle
+25 Aug 2016
+
+Christopher Burnett
+Software Engineer, Core Libraries
+
+@twoism
+
+* State of Go
+
+* History
+
+* Why Go?
+
+* Why Go?
+
+- Type safety
+- Concurrency
+- Simplicity
+- Speed
+
+* Type Safety
+
+- Eliminates entire class of errors
+- Browsability - IDEs
+- Reasonability
+
+* Concurrency
+
+- Simply model (routines & channels)
+- Built in race detection
+-
+
+* Simplicity
+
+- No generics (Sorry)
+- Robust standard lib
+- Opinionated (gofmt, lint)
+
+* Speed
+
+- NEED JSON BENCHMARKS
+
+* gRPC & Protocol Buffers
+
+* gRPC & Protocol Buffers
+
+- Google/Square joint effort 
+- IDL based RPC definition
+- Binary HTTP/2 transport
+
+* Why?
+
+- Standardize API boundaries and I/O
+- Types on the wire
+- More with less (Bandwidth)
+
+* What was missing?
+
+- Familiar tooling (Doctrine, Flask, Pynamo)
+- Devbox support
+- Code generation and framework
+- Documentation
+
+* Solutions
+
+* Odie
+
+NEED CROCHE'S SLIDES
+
+* SRV
+
+.link http://github.com/lyft/srv
+
+- gRPC & HTTP framework
+- Middleware extensible
+- Production ready (Stats, Runtime, Logger)
+
+* protoc-gen-service
+
+- protoc plugin
+- IDL based service generation
+- Handler pattern
+- Preconfigured Odie's
+- Lots more
+
+
+
+
+
+
+
+
+
+
+
+
+
