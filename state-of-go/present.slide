@@ -35,10 +35,6 @@ Core Libraries
 - Robust standard lib (http/2, context, io)
 - Opinionated (gofmt, lint)
 
-* Speed
-
-- NEED BENCHMARKS
-
 * What's missing?
 
 - NumPy, SciPy
