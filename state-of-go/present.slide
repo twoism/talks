@@ -1,11 +1,8 @@
 State of Go
 Lyft Seattle
-14 March 2017
 
 Christopher Burnett, Chris Roche
 Core Libraries
-
-@twoism
 
 * State of Go
 
@@ -28,19 +25,44 @@ Core Libraries
 
 * Concurrency
 
+- First class citizen
 - Simply model (routines & channels)
 - Built in race detection
--
 
 * Simplicity
 
 - No generics (Sorry)
-- Robust standard lib
+- Robust standard lib (http/2, context, )
 - Opinionated (gofmt, lint)
 
 * Speed
 
-- NEED JSON BENCHMARKS
+- NEED BENCHMARKS
+
+* Go at Lyft
+
+- Odie (MongoDB & DynamoDB ODM)
+- SRV (gRPC & HTTP Framework)
+- protoc-gen-service (IDL based service generator)
+- protoc-gen-lyftgo (protoc plugin framework)
+
+* Where to start?
+
+Getting Started with Go
+
+.link https://docs.google.com/document/d/1bBkI-03w6uhNXF-zZ_tKg4QIVPeAiAGLK1xmd7MyHco
+
+protoc-gen-service
+
+.link https://docs.google.com/document/d/1YncWZqiO76taFe07SvqbjRhc0_pHmdwCCUCbyc7XrIQ
+
+srv Docs
+
+.link https://github.com/lyft/srv
+
+Odie Docs
+
+.link https://github.com/lyft/odie
 
 * gRPC & Protocol Buffers
 
@@ -56,13 +78,6 @@ Core Libraries
 - Types on the wire
 - More with less (Bandwidth)
 
-* What was missing?
-
-- Familiar tooling (Doctrine, Flask, Pynamo)
-- Devbox support
-- Code generation and framework
-- Documentation
-
 * Solutions
 
 * Odie
@@ -77,23 +92,326 @@ NEED CROCHE'S SLIDES
 - Middleware extensible
 - Production ready (Stats, Runtime, Logger)
 
+* Defining a service
+
+	message Driver {
+		option (odie.dynamo_repo).enabled = true;
+		uint64 id                    = 1 [(odie.dynamo_attr).primary = true];
+		uint64 activeVehicleId       = 2;
+		int64 lastUpdatedTimestamp   = 3 [(odie.type).date_time = true];
+	}
+
+	service Drivers {
+		rpc Get (GetRequest) returns (GetResponse) {}
+		rpc GetFromSupply (GetRequest) returns (GetSupplyResponse) {}
+		rpc Create (CreateRequest) returns (CreateResponse) {}
+		rpc Update (UpdateRequest) returns (UpdateResponse) {}
+	}
+
+* gRPC Implementation
+
+	type DriversServer interface {
+		Get(context.Context, *GetRequest) (*GetResponse, error)
+		GetFromSupply(context.Context, *GetRequest) (*GetSupplyResponse, error)
+		Create(context.Context, *CreateRequest) (*CreateResponse, error)
+		Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
+	}
+
+* Building a service
+
+	package main
+
+	func main() {
+		srv, err := server.New(config.New())
+
+		if err != nil {
+			panic(err)
+		}
+		
+		drv := drivers_service.New(drivers_config.New())
+		srv.RegisterGRPC(drv)
+
+		srv.Get("/api/1/drivers").WithStat("get.drivers").WithHandler(func(*cfg.Config) http.HandlerFunc {
+			return func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			}
+		})
+
+		err = srv.Serve()
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
+* What's in a Config?
+
+	// Base Config
+	type IFace interface {
+		Env() env.Settings
+		Runtime() runtime.Snapshot
+		Logger() logger.Logger
+		Meta() *Meta
+		Scope() stats.Scope
+	}
+
+	// Server Config
+	type IFace interface {
+		config.IFace
+		HttpConfig() *http.Config
+		GrpcConfig() *grpc.Config
+	}
+
+	// App Config
+	type IFace interface {
+		config.IFace
+		DynamoDbDriverRepo() driver_dynamodb_repo.IFace
+		DynamoDbVehicleRepo() vehicle_dynamodb_repo.IFace
+	}
+
+* protoc-gen-service
+
 * protoc-gen-service
 
 - protoc plugin
 - IDL based service generation
-- Handler pattern
+- Prescriptive design pattern
+- Encourages testable boundaries
+
+* Why build this?
+
+- Reducing config copy pasta
+- Consistent project structure
+- Time to running Devbox image (~5mins)
+
+* Generating a service
+
+	$ script/gen-service supply
+
+.image pgs.png 550 _
+
+* What's included?
+
 - Preconfigured Odie's
-- Lots more
+- gRPC CLI
+- Devbox integration
+- Repositories with Mocks
+- Tests, tests, and more tests
 
+* Project Layout
 
+	├── Dockerfile
+	├── Makefile
+	├── OWNERS
+	├── README.md
+	├── cli
+	├── config
+	├── glide.yaml
+	├── infra
+	├── main.go
+	├── manifest.yaml
+	├── ops
+	├── repositories
+	├── script
+	└── services
 
+* Repositories
 
+	├── repositories
+	└── dynamodb
+		├── driver
+		│   ├── driver_repo.go
+		│   ├── driver_repo_test.go
+		│   └── events
+		└── vehicle
+			├── events
+			├── vehicle_repo.go
+			└── vehicle_repo_test.go
 
+* Repositories
 
+- Handle business logic
+- Encapsulate queries
+- Easily Mocked
+- Meant to be extended
 
+* Repositories
 
+The generated CRUD IFace. 
 
+	type IFace interface {
+		GetByID(context.Context, uint64) (*models.UserModel, error)
+		DeleteByID(context.Context, uint64) error
+		Upsert(context.Context, *models.UserModel) (uint64, error)
+	}
 
+* Repositories
 
+	func New(repo repo.IFace) (r *Repo) {
+		r = &Repo{repo: repo}
 
+		return
+	}
+
+	func (r *Repo) GetByID(ctx context.Context, id uint64) (*models.UserModel, error) {
+		var target models.UserModel
+		err := r.repo.Get(ctx, id).Into(&target).Response()
+
+		if err == mgo.ErrNotFound {
+			err = ErrNotFound
+		}
+
+		return &target, err
+	}
+
+	func (r *Repo) Upsert(ctx context.Context, target *models.UserModel) error {
+		return r.repo.Put(ctx, target).Response()
+	}
+
+	func (r *Repo) DeleteByID(ctx context.Context, id uint64) error {
+		return r.repo.Delete(ctx, id).Response()
+	}
+
+* Testing
+
+	import (
+		models "github.com/lyft/lyft-idl/generated/go/pb/lyft/testsrv"
+		repo "github.com/lyft/lyft-idl/generated/go/pb/lyft/testsrv/testsrv/dynamodb"
+	)
+
+	func TestRepo_GetByID(t *testing.T) {
+		expect := &models.UserModel{Id: 1}
+		mock := repo.NewMock(expect, nil)
+		r := New(mock)
+
+		got, err := r.GetByID(context.Background(), 1)
+		assert.NoError(t, err)
+		assert.Equal(t, expect, got)
+	}
+
+	func TestRepo_GetByIDNotFound(t *testing.T) {
+		mock := repo.NewMock(nil, ErrNotFound)
+		r := New(mock)
+
+		got, err := r.GetByID(context.Background(), 1)
+
+		assert.Equal(t, &models.UserModel{}, got)
+		assert.Equal(t, ErrNotFound, err)
+	}
+
+* Handlers
+
+- Functions bound to each RPC method
+- Reduce complexity
+- Encourage granular testing
+
+* Handlers
+
+	└── services
+		├── drivers
+		    ├── config
+		    │   └── drivers_config.go
+		    ├── drivers_service.go
+		    └── grpc
+		        └── handlers
+		            ├── common.go
+		            ├── create_handler.go
+		            ├── create_handler_test.go
+		            ├── get_from_supply_handler.go
+		            ├── get_from_supply_handler_test.go
+		            ├── get_handler.go
+		            ├── get_handler_test.go
+		            ├── package.go
+		            ├── update_handler.go
+		            └── update_handler_test.go
+
+* Handlers
+
+	var ErrDriverNotFound = grpc.Errorf(codes.NotFound, "driver not found")
+	var ErrGetDriverDisabled = grpc.Errorf(codes.Internal, "get driver disabled")
+
+	func Get(cfg *config.DriversConfig) GetDriverHandlerFunc {
+		return func(ctx context.Context, req *models.GetDriverRequest) (*models.GetDriverResponse, error) {
+			
+			if !cfg.Runtime().FeatureEnabled("get_driver_api") {
+				return nil, ErrGetDriverDisabled
+			}
+
+			drv, err := cfg.DynamoDbDriverRepo().GetByID(ctx, req.Id)
+
+			if err != nil {
+				if err == driver.ErrNotFound {
+					return nil, ErrDriverNotFound
+				}
+
+				return nil, grpc.Errorf(codes.Internal, err.Error())
+			}
+
+			return &models.GetDriverResponse{Driver: drv.ToProto()}, nil
+		}
+	}
+
+* Testing
+
+	func TestGetDriverHandler(t *testing.T) {
+		expected := &models.DriverModel{Id: 1}
+
+		cfg := config.NewMock(expected, nil)
+		resp, err := GetDriver(cfg)(context.Background(), &models.GetDriverRequest{Id: 1})
+
+		assert.NoError(t, err)
+		assert.Equal(t, expected.Id, resp.Driver.Id.Id)
+	}
+
+	func TestGetDriverHandler_NotFound(t *testing.T) {
+		cfg := config.NewMock(nil, driver.ErrNotFound)
+		resp, err := GetDriver(cfg)(context.Background(), &models.GetDriverRequest{Id: 1})
+
+		assert.Nil(t, resp)
+		assert.Equal(t, ErrDriverNotFound, err)
+	}
+
+* Sanity checking gRPC
+
+- No cURL
+- Binary transport
+- Write your own clients
+
+* SRV CLI
+
+	~/Go/src/github.com/lyft/supply → ./cli/cli
+	NAME:
+	   supply - CLI for the gRPC service
+
+	USAGE:
+	   cli [global options] command [command options] [arguments...]
+
+	VERSION:
+	   0.0.0
+
+	COMMANDS:
+	     GetDriver  ./bin/cli GetDriver '{}'
+	     Create     ./bin/cli Create '{}'
+	     Update     ./bin/cli Update '{}'
+	     Create     ./bin/cli Create '{}'
+	     Get        ./bin/cli Get '{}'
+	     Update     ./bin/cli Update '{}'
+	     help, h    Shows a list of commands or help for one command
+
+	GLOBAL OPTIONS:
+	   --help, -h     show help
+	   --version, -v  print the version
+
+* Usage
+
+	$ ./cli/cli Create '{"Name": "Christopher"}'
+	$ ./cli/cli Get '{"Id": 1}'
+
+What else?
+
+- Full integration tests (Mongo & Dynamo)
+- Extensive README docs
+- Preconfigured CI and Orca
+
+* Questions?
 
