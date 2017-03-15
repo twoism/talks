@@ -41,7 +41,7 @@ Core Libraries
 
 * What's missing?
 
-- NumPy, SciPy 
+- NumPy, SciPy
 - Mature ML
 
 * Go at Lyft
@@ -69,25 +69,328 @@ Odie Docs
 
 .link https://github.com/lyft/odie
 
-* gRPC & Protocol Buffers
 
-* gRPC & Protocol Buffers
+* Protocol Buffers, gRPC, Versions, Oh My!
 
-- Google/Square joint effort 
-- IDL based RPC definition
-- Binary HTTP/2 transport
+* Protocol Buffers
 
-* Why?
+* Protocol Buffers
 
-- Standardize API boundaries and I/O
-- Types on the wire
-- More with less (Bandwidth)
+- Google IDL (see: Thrift, JSON Schema, Avro)
+- Binary serializable
+- Strict types
+- Backwards/Forwards compatibility
+- NOT self-describing
 
-* Solutions
+*Features*
+
+- Strings, Binary, Integers, Floats, Boolean, Maps, Arrays
+- enums (integers only)
+- composition (embedded types)
+- unions (via `oneof`)
+- nesting
+
+* Proto2 (2008)
+
+- First public version of PBs
+- Optional vs Required fields
+- Exposes extensions API
+
+  syntax = "proto2";
+
+  package pb.lyft.records;
+
+  import "pb/lyft/widgets/gizmo.proto";
+
+  message Record {
+      required uint64        id    = 1;
+      optional string        label = 2;
+      optional widgets.Gizmo gizmo = 3;
+  }
+
+.link https://developers.google.com/protocol-buffers/docs/proto
+
+* Proto3 (2016)
+
+- Optional only
+- Zero value defaults
+- Incompatible `enum` implementations with proto2
+
+  syntax = "proto3";
+
+  package pb.lyft.records;
+
+  import "pb/lyft/widgets/gizmo.proto";
+
+  message Record {
+      uint64        id    = 1;
+      string        label = 2;
+      widgets.Gizmo gizmo = 3;
+  }
+
+.link https://developers.google.com/protocol-buffers/docs/proto3
+
+* Extensions
+
+- Modify the fields of an unowned protobuf
+- Think monkey patching (don't) or meta-programming (do)
+- Options: metadata for any facet of a proto file
+
+  # proto/ext/odie.proto
+
+  extend google.protobuf.MessageOptions {
+    optional bool model = 89132;
+  }
+
+  # proto/lyft/record.proto
+
+  import "proto/ext/odie.proto"
+
+  message Record {
+    option (odie.model) = true;
+
+    required uint64        id    = 1 [(odie.mongo_attr).name = "_id"];
+    optional string        label = 2;
+  }
+
+* Protoc
+
+* Protoc
+
+- Protocol buffer compiler
+- Parses *.proto files into descriptors
+- All dependencies and syntactic validation
+- (which are actually PB Messages themselves)
+- Doesn't know what to do with them
+- Versioned independently of syntax and libraries
+
+* Protoc Plugins
+
+- `protoc-gen-*`
+- Receives serialized descriptors via `stdin`
+- Responds with files to generate on `stdout`
+
+*Plugins*We*Use*
+
+- python (Official)
+- client (Flask gRPC clients)
+- lyftgo (Official Go + Envoy aware gRPC clients)
+- odie (Odie models and repos)
+- php2 (Unofficial, only one that supports proto2)
+- doctrine (Decomp of core services)
+
+* Execution
+
+  protoc \
+      -I . \
+      -lyftgo_out="plugins=grpc+envoy:../generated/go" \
+      -odie_out="plugins=odie:../generated/go" \
+      ./*.proto
+
+* Python/PHP/Go Protobuf Library
+
+* Python/PHP/Go Protobuf Library
+
+- Shared code for handling protocol buffers
+- Dependency of the generated code
+- Versioned independently of protoc and syntax
+- Python: pure python (slow) or native bindings (fast)
+- PHP: C-based PHP module extension
+- Go: pure Go implementation
+
+* gRPC
+
+* gRPC
+
+- Transport mechanism for Protocol Buffers
+- Type safety at service boundaries
+- Implemented on top of HTTP/2
+- Unary and Streaming endpoints
+- Extensible through options and interceptors
+- Path based, but not REST-ful
+
+  service Manager {
+    rpc Create (CreateRequest) returns (CreateResponse) {}
+    rpc Suspend (SuspendRequest) returns (SuspendResponse) {}
+    rpc Resume (ResumeRequest) returns (ResumeResponse) {}
+    rpc SetPrivileges (SetPrivilegesRequest) returns (SetPrivilegesResponse) {}
+    rpc Invalidate (InvalidateRequest) returns (InvalidateResponse) {}
+    rpc Get (GetRequest) returns (GetResponse) {}
+  }
+
+* gRPC Server
+
+Implement Service Interface
+
+  type ManagerServer interface {
+    Create(context.Context, *CreateRequest) (*CreateResponse, error)
+    Suspend(context.Context, *SuspendRequest) (*SuspendResponse, error)
+    Resume(context.Context, *ResumeRequest) (*ResumeResponse, error)
+    SetPrivileges(context.Context, *SetPrivilegesRequest) (*SetPrivilegesResponse, error)
+    Invalidate(context.Context, *InvalidateRequest) (*InvalidateResponse, error)
+    Get(context.Context, *GetRequest) (*GetResponse, error)
+  }
+
+Boot Server & Register Service
+
+  server := grpc.NewServer()
+  auth.RegisterManagerServer(server, &MyCMS{})
+
+  lis, err := net.Listen("tcp", ":8081")
+  checkErr(err)
+
+  server.Serve(lis)
+
+* gRPC Client
+
+Dial Server & Instantiate Client
+
+  conn, err := grpc.Dial(":8081")
+  checkErr(err)
+
+  cl := auth.NewManagerClient(conn)
+
+  res, err := cl.Get(context.TODO(), &GetRequest{"my-fancy-client"})
+  checkErr(err)
+
+  // res == *auth.GetResponse{ ... }
+
+Envoy Aware Clients
+
+  envoy := fmt.Sprintf(":%s", os.GetEnv("ENVOY_PORT"))
+
+  cl, err := auth.NewEnvoyManagerClient(envoy, "auth")
+  checkErr(err)
+
+  res, err := cl.Get(...)
+
+* gRPC Response Codes
+
+- Always 200 HTTP Response Code
+- gRPC Codes Exposed in returned error
+
+  OK                 Code =  0
+  Canceled           Code =  1
+  Unknown            Code =  2
+  InvalidArgument    Code =  3
+  DeadlineExceeded   Code =  4
+  NotFound           Code =  5
+  AlreadyExists      Code =  6
+  PermissionDenied   Code =  7
+  ResourceExhausted  Code =  8
+  FailedPrecondition Code =  9
+  Aborted            Code = 10
+  OutOfRange         Code = 11
+  Unimplemented      Code = 12
+  Internal           Code = 13
+  Unavailable        Code = 14
+  DataLoss           Code = 15
+  Unauthenticated    Code = 16
+
+.link https://godoc.org/google.golang.org/grpc/codes
 
 * Odie
 
-NEED CROCHE'S SLIDES
+* Odie
+
+*Driver-agnostic*ODM*For*Go*
+
+- Object-Document Mapper
+- Supports: MongoDB and DynamoDB
+- Hackathon: BoltDB (thanks, @rcox!)
+- Future: CockroachDB and/or Spanner
+
+*Protocol*Buffer*Based*Schema*
+
+- Build type-safe models and repositories
+- Schema validation
+- Serializable (`ToProto` / `ToModel`)
+- Uses extensions for customization
+
+* Odie: Architecture
+
+- Expressions (Fluent Builder & Driver-Specific Marshalers)
+- Action Builders (Fluent, Type-Unsafe, Driver-Specific)
+- Clients (Driver-Specific)
+- Decorators (Modify Actions)
+- Odie Models or any types as input
+- Repos (Fluent, Type-Safe, Driver-Specific)
+
+* Odie: Schema
+
+  syntax = "proto3";
+
+  package pb.lyft.records;
+
+  import "pb/ext/odie/odie.proto";
+  import "pb/lyft/widgets/gizmo.proto";
+
+  message Record {
+      option (odie.mongo_repo).enabled = true;
+
+      uint64        id    = 1 [ (odie.mongo_attr).primary_key = true,
+                                (odie.type).object_id         = true ];
+
+      string        label = 2 [ (odie.mongo_attr).omit_if_empty = true ];
+
+      widgets.Gizmo gizmo = 3 [ (odie.mongo_attr).name = "gadget" ];
+  }
+
+* Odie: Model & Repo
+
+Models are ordinary structs
+
+  type RecordModel struct {
+    o *RecordModel
+
+    Id    bson.ObjectID
+    Label string              `bson:",omit_empty"`
+    Gizmo *widgets.GizmoModel `bson:"gadget"`
+  }
+
+Repository is type-aware
+
+  type IFace interface {
+  	Events() *Events
+  	Get(ctx context.Context, id bson.ObjectID) *GetBuilder
+  	Put(ctx context.Context, target *RecordModel) *PutBuilder
+  	Delete(ctx context.Context) *DeleteBuilder
+  	Update(ctx context.Context) *UpdateBuilder
+  	Query(ctx context.Context) *QueryBuilder
+  }
+
+* Odie: Example Usage
+
+Get
+
+  var rec RecordModel
+  id := bson.ObjectIdHex("deadb33f")
+  err := repo.Get(ctx, id).Into(&rec).Response()
+
+Update
+
+  rec.Label = "this is my new label"
+  err = repo.Update(ctx).Into(&rec).Response()
+
+Query
+
+  var recs []RecordModel
+  err = repo.Query(ctx).Into(&recs).
+    Offset(100).Limit(20).
+    Where().Attr("label").Exists().
+    Response()
+
+* Odie: More Features
+
+- Put / Get / Update / Query / Scan / Delete / Count
+- Upsert vs Insert vs FindAndModify
+- Lifecycle Hooks
+- Change Set Tracking & Partial Updates
+- Polymorphic Fields
+- Optimistic & Pessimistic Locking
+- Inlining support (even on polymorphic fields)
+
+* SRV
 
 * SRV
 
@@ -132,7 +435,7 @@ NEED CROCHE'S SLIDES
 		if err != nil {
 			panic(err)
 		}
-		
+
 		drv := drivers_service.New(drivers_config.New())
 		srv.RegisterGRPC(drv)
 
@@ -242,7 +545,7 @@ NEED CROCHE'S SLIDES
 
 * Repositories
 
-The generated CRUD IFace. 
+The generated CRUD IFace.
 
 	type IFace interface {
 		GetByID(context.Context, uint64) (*models.UserModel, error)
@@ -337,7 +640,7 @@ The generated CRUD IFace.
 
 	func Get(cfg *config.DriversConfig) GetDriverHandlerFunc {
 		return func(ctx context.Context, req *models.GetDriverRequest) (*models.GetDriverResponse, error) {
-			
+
 			if !cfg.Runtime().FeatureEnabled("get_driver_api") {
 				return nil, ErrGetDriverDisabled
 			}
