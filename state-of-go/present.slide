@@ -42,6 +42,7 @@ Core Libraries
 
 * Go at Lyft
 
+- ~7 Services
 - Odie (MongoDB & DynamoDB ODM)
 - SRV (gRPC & HTTP Framework)
 - protoc-gen-service (IDL based service generator)
@@ -57,7 +58,7 @@ protoc-gen-service
 
 .link https://docs.google.com/document/d/1YncWZqiO76taFe07SvqbjRhc0_pHmdwCCUCbyc7XrIQ
 
-srv Docs
+SRV Docs
 
 .link https://github.com/lyft/srv
 
