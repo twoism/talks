@@ -19,7 +19,7 @@ Core Libraries
 
 * Type Safety
 
-- Eliminates entire class of errors
+- Eliminates entire class of errors (60k+ per day)
 - Browsability - IDEs
 - Reasonability
 
@@ -34,6 +34,29 @@ Core Libraries
 - No generics (Sorry)
 - Robust standard lib (http/2, context, io)
 - Opinionated (gofmt, lint)
+
+* Speed
+
+Yay microbenchmarks!
+.link https://benchmarksgame.alioth.debian.org/u64q/compare.php?lang=go&lang2=python3
+
+* Protobuf/JSON Serialization - Go
+
+	→ go test -bench=. -benchtime=5s 
+
+	BenchmarkJSON_Map-8                  100          88.417576 ms/op
+	BenchmarkJSON_Struct-8               100          88.856584 ms/op
+	BenchmarkJSON_ffjson-8               200          50.030615 ms/op
+	BenchmarkProto-8                     200          40.539877 ms/op
+	BenchmarkProto_ToJSON-8               10         620.126993 ms/op
+
+* Protobuf/JSON Serialization - Python/C
+
+	Proto run 495.734930038 ms
+	Json  run  74.496984481 ms
+
+Thanks, @ssen!
+
 
 * What's missing?
 
