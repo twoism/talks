@@ -1,5 +1,5 @@
 State of Go
-Lyft Seattle
+Lyft San Francisco
 
 Christopher Burnett, Chris Roche
 Core Libraries
@@ -42,7 +42,7 @@ Yay microbenchmarks!
 
 * Protobuf/JSON Serialization - Go
 
-	→ go test -bench=. -benchtime=5s 
+	→ go test -bench=. -benchtime=5s
 
 	BenchmarkJSON_Map-8                  100          88.417576 ms/op
 	BenchmarkJSON_Struct-8               100          88.856584 ms/op
@@ -89,26 +89,14 @@ Odie Docs
 
 .link https://github.com/lyft/odie
 
-
 * Protocol Buffers, gRPC, Versions, Oh My!
 
 * Protocol Buffers
 
-* Protocol Buffers
-
 - Google IDL (see: Thrift, JSON Schema, Avro)
-- Binary serializable
 - Strict types
 - Backwards/Forwards compatibility
 - NOT self-describing
-
-*Features*
-
-- Strings, Binary, Integers, Floats, Boolean, Maps, Arrays
-- enums (integers only)
-- composition (embedded types)
-- unions (via `oneof`)
-- nesting
 
 * Proto2 (2008)
 
@@ -150,39 +138,12 @@ Odie Docs
 
 .link https://developers.google.com/protocol-buffers/docs/proto3
 
-* Extensions
-
-- Modify the fields of an unowned protobuf
-- Think monkey patching (don't) or meta-programming (do)
-- Options: metadata for any facet of a proto file
-
-  # proto/ext/odie.proto
-
-  extend google.protobuf.MessageOptions {
-    optional bool model = 89132;
-  }
-
-  # proto/lyft/record.proto
-
-  import "proto/ext/odie.proto"
-
-  message Record {
-    option (odie.model) = true;
-
-    required uint64        id    = 1 [(odie.mongo_attr).name = "_id"];
-    optional string        label = 2;
-  }
-
-* Protoc
-
 * Protoc
 
 - Protocol buffer compiler
-- Parses *.proto files into descriptors
-- All dependencies and syntactic validation
-- (which are actually PB Messages themselves)
-- Doesn't know what to do with them
 - Versioned independently of syntax and libraries
+- Parses *.proto files into descriptors
+- Doesn't know what to do with them...
 
 * Protoc Plugins
 
@@ -207,18 +168,13 @@ Odie Docs
       -odie_out="plugins=odie:../generated/go" \
       ./*.proto
 
-* Python/PHP/Go Protobuf Library
+*Lyft-IDL*does*this*so*you*don't*have*to!*
 
 * Python/PHP/Go Protobuf Library
 
 - Shared code for handling protocol buffers
 - Dependency of the generated code
-- Versioned independently of protoc and syntax
-- Python: pure python (slow) or native bindings (fast)
-- PHP: C-based PHP module extension
-- Go: pure Go implementation
-
-* gRPC
+- Versioned independently of `protoc` and syntax
 
 * gRPC
 
@@ -226,8 +182,6 @@ Odie Docs
 - Type safety at service boundaries
 - Implemented on top of HTTP/2
 - Unary and Streaming endpoints
-- Extensible through options and interceptors
-- Path based, but not REST-ful
 
   service Manager {
     rpc Create (CreateRequest) returns (CreateResponse) {}
@@ -254,7 +208,7 @@ Implement Service Interface
 Boot Server & Register Service
 
   server := grpc.NewServer()
-  auth.RegisterManagerServer(server, &MyCMS{})
+  auth.RegisterManagerServer(server, &MyMS{})
 
   lis, err := net.Listen("tcp", ":8081")
   checkErr(err)
@@ -329,12 +283,20 @@ Envoy Aware Clients
 
 * Odie: Architecture
 
-- Expressions (Fluent Builder & Driver-Specific Marshalers)
+- Expressions (Fluent Builder & Driver-Agnostic)
 - Action Builders (Fluent, Type-Unsafe, Driver-Specific)
 - Clients (Driver-Specific)
 - Decorators (Modify Actions)
 - Odie Models or any types as input
 - Repos (Fluent, Type-Safe, Driver-Specific)
+
+* Odie: Features
+
+- Lifecycle Hooks
+- Change Set Tracking & Partial Updates
+- Polymorphic Fields
+- Optimistic & Pessimistic Locking
+- Inlining support (even on polymorphic fields)
 
 * Odie: Schema
 
@@ -348,7 +310,7 @@ Envoy Aware Clients
   message Record {
       option (odie.mongo_repo).enabled = true;
 
-      uint64        id    = 1 [ (odie.mongo_attr).primary_key = true,
+      string        id    = 1 [ (odie.mongo_attr).primary_key = true,
                                 (odie.type).object_id         = true ];
 
       string        label = 2 [ (odie.mongo_attr).omit_if_empty = true ];
@@ -361,8 +323,6 @@ Envoy Aware Clients
 Models are ordinary structs
 
   type RecordModel struct {
-    o *RecordModel
-
     Id    bson.ObjectID
     Label string              `bson:",omit_empty"`
     Gizmo *widgets.GizmoModel `bson:"gadget"`
@@ -400,16 +360,6 @@ Query
     Where().Attr("label").Exists().
     Response()
 
-* Odie: More Features
-
-- Put / Get / Update / Query / Scan / Delete / Count
-- Upsert vs Insert vs FindAndModify
-- Lifecycle Hooks
-- Change Set Tracking & Partial Updates
-- Polymorphic Fields
-- Optimistic & Pessimistic Locking
-- Inlining support (even on polymorphic fields)
-
 * SRV
 
 * SRV
@@ -419,22 +369,6 @@ Query
 - gRPC & HTTP framework
 - Middleware extensible
 - Production ready (Stats, Runtime, Logger)
-
-* Defining a service
-
-	message Driver {
-		option (odie.dynamo_repo).enabled = true;
-		uint64 id                    = 1 [(odie.dynamo_attr).primary = true];
-		uint64 activeVehicleId       = 2;
-		int64 lastUpdatedTimestamp   = 3 [(odie.type).date_time = true];
-	}
-
-	service Drivers {
-		rpc Get (GetRequest) returns (GetResponse) {}
-		rpc GetFromSupply (GetRequest) returns (GetSupplyResponse) {}
-		rpc Create (CreateRequest) returns (CreateResponse) {}
-		rpc Update (UpdateRequest) returns (UpdateResponse) {}
-	}
 
 * gRPC Implementation
 
@@ -532,16 +466,16 @@ Query
 	├── Makefile
 	├── OWNERS
 	├── README.md
-	├── cli
-	├── config
+	├── cli/
+	├── config/
 	├── glide.yaml
-	├── infra
+	├── infra/
 	├── main.go
 	├── manifest.yaml
-	├── ops
-	├── repositories
-	├── script
-	└── services
+	├── ops/
+	├── repositories/
+	├── script/
+	└── services/
 
 * Repositories
 
@@ -740,6 +674,7 @@ What else?
 - Full integration tests (Mongo & Dynamo)
 - Extensive README docs
 - Preconfigured CI and Orca
+- Python service generation coming soon!
 
 * Questions?
 
